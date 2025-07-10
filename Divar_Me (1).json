@@ -1,0 +1,357 @@
+{
+  "name": "Divar_Me",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "triggerAtMinute": 4
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -460,
+        380
+      ],
+      "id": "84dfa5bf-e9cc-4c5f-addd-a03f4c56a049",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://divar.ir/s/tehran/rent-residential/ararat?credit=-1200000000&districts=925%2C167%2C91%2C57%2C297%2C933%2C929%2C81%2C75%2C202%2C138%2C78%2C1035%2C299%2C923%2C96%2C88%2C139%2C315%2C90%2C927&map_bbox=51.29011917114258%2C35.69881820678711%2C51.42755126953125%2C35.81095886230469&map_interaction=list_only_used&map_place_hash=1%7C1035%2C138%2C139%2C167%2C202%2C297%2C299%2C315%2C57%2C75%2C78%2C81%2C87%2C88%2C90%2C91%2C923%2C925%2C929%2C933%2C96%7Cresidential-rent&parking=true&recent_ads=3h&rent=-30000000&rooms=%D8%AF%D9%88%2C%DB%8C%DA%A9&size=65-",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": " User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        380
+      ],
+      "id": "710539aa-ee0d-4982-841f-346e36abd331",
+      "name": "Fetch Divar Data",
+      "alwaysOutputData": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        700,
+        380
+      ],
+      "id": "f7406dba-e77a-4ac8-9d3e-ba75d16dff17",
+      "name": "Aggregate Pages"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e0e85958-fd05-4fe8-b984-eb6f92261249",
+              "leftValue": "={{ parseInt($json.modified_date.substring(0, 13)) }}",
+              "rightValue": "={{ Date.now() - 3600000 * 1}}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        700
+      ],
+      "id": "54079562-b4f1-41c3-993a-332047e440f4",
+      "name": "Filter Recent Posts"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f00cbb4-2c1f-4c28-93ce-2691f998a6ee",
+              "name": "Title",
+              "value": "={{ $json['تایتل'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f002beb8-2644-4ec1-8062-a486d94ebecf",
+              "name": "Rahn",
+              "value": "={{ $json['ودیعه'] }}",
+              "type": "string"
+            },
+            {
+              "id": "1f435d2a-50ef-40b0-a946-ec5e030661ad",
+              "name": "Ejareh",
+              "value": "={{ $json['اجاره'] }}",
+              "type": "string"
+            },
+            {
+              "id": "83de52f7-3b4d-421d-a0a1-3a8f46c35f42",
+              "name": "Link",
+              "value": "={{ $json['لینک'] }}",
+              "type": "string"
+            },
+            {
+              "id": "4b1d4051-aeaa-41c9-9b41-7c4052213ce6",
+              "name": "Published_at",
+              "value": "={{ $json['تاریخ تهران'] }}",
+              "type": "string"
+            },
+            {
+              "id": "ebbd8153-082e-4b14-af75-3ed8a80f7b7c",
+              "name": "Note",
+              "value": "={{ $json['منتشر شده در'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1720,
+        680
+      ],
+      "id": "26f785e7-5862-43f8-900f-8773df5f2ebc",
+      "name": "Format Extracted Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const months = [\n  '', 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',\n  'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'\n];\n\nfunction divarSortDateToTehranPretty(sort_date) {\n  if (!sort_date || sort_date === 'Not Found') return '';\n  const ms = Math.floor(Number(sort_date) / 1000);\n  const date = new Date(ms);\n  const fa = date.toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' });\n  const [datePart, timePart] = fa.split('،');\n  if (!datePart || !timePart) return fa;\n  const [year, month, day] = datePart.split('/');\n  const monthName = months[parseInt(month, 10)];\n  const time = timePart.replace(/[^\\d:]/g, '').split(':');\n  const hourMinute = time[0] + ':' + time[1];\n  // Convert Persian digits to English\n  const toEn = s => s.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));\n  return `${toEn(String(Number(day)))} ${monthName} ، ${toEn(hourMinute)}`;\n}\n\nconst results = [];\nconst htmlPages = $json.data; // This is an array of {data: \"<html>...</html>\"}\n\nfor (const htmlObj of htmlPages) {\n  const html = htmlObj.data; // The HTML string\n\n  // Extract __PRELOADED_STATE__ JSON\n  const scriptTagRegex = /window\\.__PRELOADED_STATE__\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;/;\n  const match = html.match(scriptTagRegex);\n\n  if (!match || !match[1]) continue;\n\n  let preloadedState;\n  try {\n    preloadedState = JSON.parse(match[1]);\n  } catch (e) {\n    continue;\n  }\n\n  // Find posts_metadata\n  let postsMetadata = null;\n  if (preloadedState?.nb?.actionLog?.server_side_info?.info?.posts_metadata) {\n    postsMetadata = preloadedState.nb.actionLog.server_side_info.info.posts_metadata;\n  } else if (preloadedState?.posts_metadata) {\n    postsMetadata = preloadedState.posts_metadata;\n  } else if (preloadedState?.actionLog?.server_side_info?.info?.posts_metadata) {\n    postsMetadata = preloadedState.actionLog.server_side_info.info.posts_metadata;\n  } else {\n    function findPostsMeta(obj) {\n      if (Array.isArray(obj) && obj.length && obj[0].token && obj[0].sort_date) return obj;\n      if (typeof obj === 'object' && obj !== null) {\n        for (const key in obj) {\n          const found = findPostsMeta(obj[key]);\n          if (found) return found;\n        }\n      }\n      return null;\n    }\n    postsMetadata = findPostsMeta(preloadedState);\n  }\n  if (!Array.isArray(postsMetadata)) continue;\n\n  // Extract posts from HTML\n  const postRegex = /href=\"(\\/v\\/[^\"]+)\"[\\s\\S]*?<h2 class=\"unsafe-kt-post-card__title\">([^<]+)<\\/h2>[\\s\\S]*?<div class=\"unsafe-kt-post-card__description\">([^<]*)<\\/div>[\\s\\S]*?<div class=\"unsafe-kt-post-card__description\">([^<]*)<\\/div>[\\s\\S]*?<span class=\"unsafe-kt-post-card__bottom-description[^\"]*\" title=\"([^\"]*)\"/g;\n\n  let matchPost;\n  while ((matchPost = postRegex.exec(html)) !== null) {\n    const link = matchPost[1];\n    const title = matchPost[2].trim();\n    const price1 = matchPost[3].trim();\n    const price2 = matchPost[4].trim();\n    const published_at = matchPost[5].trim();\n\n    // Extract token from link\n    const urlParts = link.split('/');\n    let token = urlParts[urlParts.length - 1];\n    if (!token) token = urlParts[urlParts.length - 2];\n\n    // Find sort_date for this token\n    let modified_date = 'Not Found';\n    const meta = postsMetadata.find(m => \n      decodeURIComponent(m.token).toLowerCase() === decodeURIComponent(token).toLowerCase()\n    );\n    if (meta && meta.sort_date) {\n      modified_date = meta.sort_date;\n    }\n\n    results.push({\n      \"تایتل\": title,\n      \"ودیعه\": price1,\n      \"اجاره\": price2 || 'رهن کامل',\n      \"منتشر شده در\": published_at,\n      \"modified_date\": modified_date,\n      \"تاریخ تهران\": divarSortDateToTehranPretty(modified_date),\n      \"لینک\": `https://divar.ir${link}`\n    });\n  }\n}\n\nreturn results.map(r => ({json: r}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        620
+      ],
+      "id": "5698cbb0-913e-4ac2-a270-9633e2215746",
+      "name": "Extract Post Fields",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "executeOnce": false,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bba30d49-b857-43d5-8f28-80f4dfbb86ca",
+              "name": "Format Telegram Message",
+              "value": "=📣 <b>شکار لحظه‌ها! یه خونه جدید رو دیوار پیدا شد!</b>\n\n🏠 <b>عنوان:</b> {{ $json.Title }}\n\n💰 <b>{{ $json.Rahn }}</b>\n💰 <b>{{ $json.Ejareh }}</b>\n\n📅 <i>{{ $json.Published_at }}</i>\n\n🗒️ <i>{{ $json.Note }}</i>\n\n\n👀 زود باش:\n<a href=\"{{ $json.Link }}\">بریم ببینیم!</a>\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2040,
+        600
+      ],
+      "id": "5a82ee78-7f38-42dc-8703-3f92c14d8e27",
+      "name": "Format Telegram Message"
+    },
+    {
+      "parameters": {
+        "chatId": "-1002875433944",
+        "text": "={{ $json['Format Telegram Message'] }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2160,
+        220
+      ],
+      "id": "367fed7f-dbbd-407b-af7e-5e41b5b95d0a",
+      "name": "Send Selected Posts",
+      "webhookId": "425a3a3e-242a-4bc9-be41-3dab92ce70cd",
+      "credentials": {
+        "telegramApi": {
+          "id": "i6kVsYi9qfhmRRuq",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6521b815-3443-4f09-ac8c-224a4b3179b3",
+              "leftValue": "={{ $json[\"تایتل\"] }}",
+              "rightValue": "روزانه|همخانه|همخونه|هم‌خانه|هم‌خانه‌ای|هم‌خونه|هم‌خونه‌ای|پانسیون|اشتراکی|خوابگاه|مراقبت|هم خانه ای|هم خانه‌ای|هم خونه ای|هم خونه‌ای|خونه ندارم|خانه ندارم|مشترک|مشترکی|اشتراک|همخوانه|هفتگی|ماهانه|هم خانه|هم خونه|خابگاه|زوج",
+              "operator": {
+                "type": "string",
+                "operation": "notRegex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1480,
+        540
+      ],
+      "id": "d11183e1-ec28-4c6a-b4c1-a384da6b6b2a",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Divar Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Divar Data": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Pages": {
+      "main": [
+        [
+          {
+            "node": "Extract Post Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Recent Posts": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Extracted Fields": {
+      "main": [
+        [
+          {
+            "node": "Format Telegram Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Post Fields": {
+      "main": [
+        [
+          {
+            "node": "Filter Recent Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Telegram Message": {
+      "main": [
+        [
+          {
+            "node": "Send Selected Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Format Extracted Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6c40a323-da92-4873-aeb7-7e39d5ac3bca",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e7c5f3b2d268aa385ccb63aca8e2dda38d49968e610e1db92922feef4a50bea2"
+  },
+  "id": "PSalL9XJXuxBjtyM",
+  "tags": []
+}
